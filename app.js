@@ -2,7 +2,7 @@
 'use strict';
 const KEY='ailefinans_v44';
 const $=id=>document.getElementById(id);
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,9);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=(n,c='TRY')=>{try{return new Intl.NumberFormat('tr-TR',{style:'currency',currency:c}).format(Number(n)||0)}catch{return `${(Number(n)||0).toFixed(2)} ${c}`}};
@@ -215,7 +215,20 @@ $('reportMember').onchange=renderReports;$('reportMonth').onchange=renderReports
 $('settingsForm').onsubmit=e=>{e.preventDefault();db.settings.appName=$('settingAppName').value.trim()||'Aile Finans';db.settings.currency=$('settingCurrency').value;db.settings.theme=$('settingTheme').value;db.settings.city=$('settingCity').value.trim()||'Antalya';db.expenseCategories=$('settingCategories').value.split(',').map(x=>x.trim()).filter(Boolean);save();render();closeModal('settingsModal');toast('Ayarlar kaydedildi')};
 $('clearData').onclick=()=>{if(!confirm('Tüm finans verileri silinecek. Bu işlem geri alınamaz.'))return;const settings=db.settings;db={...structuredClone(base),settings};save();render();toast('Tüm veriler silindi')};
 
+let dayWatcherLast=today();
+function startDayWatcher(){
+  setInterval(()=>{
+    const now=today();
+    if(now!==dayWatcherLast){
+      dayWatcherLast=now;
+      render();
+      if(currentPage==='home') refreshWeather();
+      toast('Yeni gün başladı · '+new Intl.DateTimeFormat('tr-TR',{dateStyle:'full'}).format(new Date()));
+    }
+  },15000);
+}
+
 // Initial state and boot tests
-migrate();applyTheme();render();navigate('home');refreshWeather();
+migrate();applyTheme();render();navigate('home');startDayWatcher();refreshWeather();
 window.AileFinans={getState:()=>structuredClone(db),render,navigate,addExpenseRecord,payBill,deleteBill,deleteVehicle,fuelStats,refreshWeather,openVehicle};
 })();
